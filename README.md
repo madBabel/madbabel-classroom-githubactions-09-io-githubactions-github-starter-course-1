@@ -6,6 +6,7 @@ Exercise
 Explorar las formas de proveer entradas (inputs) y establecer salidas (outputs) en flujos de trabajo de GitHub Actions.
 
 ## Tareas
+0. Preparación --> Crear un nuevo environment como mínimo llamado int
 
 1. Crear un archivo llamado `09-input-outputs.yml` en la carpeta `.github/workflows` en la raíz del repositorio. Los datos del flujo de trabajo deben ser los siguientes:
 
