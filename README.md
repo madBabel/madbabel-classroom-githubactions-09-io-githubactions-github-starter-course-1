@@ -55,6 +55,7 @@ Explorar las formas de proveer entradas (inputs) y establecer salidas (outputs) 
 Para agregar valores a un archivo, podemos usar la siguiente sintaxis: `echo "<contenido de la línea>" >> "<ruta del archivo>"`
 
 Por ejemplo, para agregar el valor de una entrada a GITHUB_OUTPUT, usa:
-
-`echo "status=${{ inputs.build-status }}" >> $GITHUB_OUTPUT`
+  ```bash
+echo "status=${{ inputs.build-status }}" >> $GITHUB_OUTPUT
+   ```
 
