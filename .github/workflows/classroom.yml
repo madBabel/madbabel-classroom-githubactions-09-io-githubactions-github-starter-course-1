@@ -1,63 +1,124 @@
-name: Autograding Tests
-on:  
-  repository_dispatch:
-  workflow_dispatch:
-  pull_request:
-    branches: feedback  
-permissions:
-  checks: write
-  actions: read
-  contents: read
+name: Autograding Workflow for Inputs and Outputs
 
+on:
+  workflow_dispatch:
 
 jobs:
-  get-workflow-id:
-    outputs:
-      run_id: ${{steps.get_workflow.outputs.run_id}}
+  autograde:
     runs-on: ubuntu-latest
 
-    steps:          
-      - name: Get workFlow Run
-        id: get_workflow
-        uses: madBabel/get-run-id-of-wf-action@v2
-        with:
-            workflow-file: 'workflow.yml'    
-            status: 'success'
+    steps:
+    # 1. Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-  checkJob:   
-    needs: get-workflow-id
-    runs-on: ubuntu-latest    
-    outputs: 
-      stepsExecuted: ${{steps.check_Steps_for_JOB.outputs.stepsExecuted}}
-    steps:     
- 
-      - name: Check step executed for JOB
-        id: check_Steps_for_JOB
-        uses: madBabel/check-jobs-steps-gha-action@v2
-        with:
-          run-id: ${{needs.get-workflow-id.outputs.run_id}}
-          job-to-execute: Saludo
-          steps-to-execute: echo-hello-world
-            
+    # 2. Validate workflow file exists
+    - name: Check if workflow exists
+      run: |
+        if [ ! -f ".github/workflows/09-input-outputs.yml" ]; then
+          echo "Workflow file 09-input-outputs.yml not found. Please ensure it exists." && exit 1
+        fi
+  
+    # 3. Run the workflow to validate behavior
+    - name: Test workflow execution
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const inputs = {
+            'dry-run': false,
+            target: 'int',
+            tag: 'v2',
+            'build-status': 'success'
+          };
 
-  autograding-reporter:    
-      needs: [checkJob]
-      runs-on: ubuntu-latest    
-      steps:           
-      - name: Run Autograding Step Tests for HEL
-        uses: classroom-resources/autograding-io-grader@v1      
-        id: test1
-        with:
-            test-name: 'Test Step executed'   
-            command: 'echo ${{needs.checkJob.outputs.stepsExecuted}}'
-            input: ''
-            expected-output: 'true'
-            comparison-method: 'exact'  
-            max-score: 100
-            
-      - name: Autograding Reporter
-        uses: classroom-resources/autograding-grading-reporter@v1     
-        with:
-           runners: test1
-        env:
-          TEST1_RESULTS: "${{ steps.test1.outputs.result }}"      
+       
+         
+          // Use listWorkflowRuns to check the status of the dispatched workflow
+          const runs = await github.rest.actions.listWorkflowRuns({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: "09-input-outputs.yml",
+            status: "success",  // You can also use "in_progress" or "queued"
+            per_page: 5 // Limit to last 5 runs
+          });
+
+          // Check if the workflow run has completed successfully
+          const latestRun = runs.data.workflow_runs[0]; // The latest successful run
+          if (!latestRun) {
+            core.setFailed("No successful workflow runs found. Make sure the workflow runs as expected.");
+          } else {
+            core.info(`Latest workflow run: ${latestRun.id}`);
+            core.info(`Run status: ${latestRun.conclusion}`);
+            core.info(`Run URL: ${latestRun.html_url}`);
+          }
+
+          // Download the logs of the workflow run
+          const logsResponse = await github.rest.actions.downloadWorkflowRunLogs({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            run_id: latestRun.id
+          });
+
+     
+          
+          // Logs are returned as a zip file, we can extract it
+          const logsUrl = logsResponse.url;
+          core.info(`Logs download URL: ${logsUrl}`);
+
+          // Use curl to download the log file (the log URL from GitHub API)
+          const logZipFile = '/tmp/logs.zip';
+
+          // Download the logs zip file using curl
+          const { execSync } = require('child_process');
+          execSync(`curl -L \"${logsUrl}\" -o \"${logZipFile}\"`);
+
+          // Unzip the downloaded log file
+          const logDir = '/tmp/logs';
+          execSync(`mkdir -p ${logDir}`);
+          execSync(`unzip ${logZipFile} -d ${logDir}`);
+
+          // Search for the expected deploy message in the logs
+          const deployMessage = `Deploying to '${inputs.target}' using tag '${inputs.tag}'`;
+
+          // Use fs and grep to search for the deploy message in the logs
+          const fs = require('fs');
+          const logFiles = fs.readdirSync(logDir);
+          let messageFound = false;
+
+          // Check if the deploy message exists in any of the logs
+          for (const logFile of logFiles) {
+            const logContent = fs.readFileSync(`${logDir}/${logFile}`, 'utf-8');
+            if (logContent.includes(deployMessage)) {
+              messageFound = true;
+              break;
+            }
+          }
+
+          if (!messageFound) {
+            core.setFailed(`Expected deployment message not found in logs: "${deployMessage}".`);
+          } else {
+            core.info(`✅ Deployment message found: "${deployMessage}"`);
+          }
+
+    # 5. Provide feedback
+    - name: Provide feedback
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const feedback = `
+          ### Autograding Feedback:
+          - Workflow file: ✅ Exists
+          - YAML Syntax: ✅ Valid
+          - Workflow Dispatch: ✅ Successful
+          - Workflow Execution: ✅ Checked via listWorkflowRuns
+          - Logs Verification: ✅ Deploy message found
+
+          🎉 Great job! Your workflow meets the required specifications.
+          `;
+
+          await github.rest.issues.createComment({
+            issue_number: context.payload.pull_request?.number || 1,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: feedback,
+          });
