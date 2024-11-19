@@ -48,3 +48,13 @@ Explorar las formas de proveer entradas (inputs) y establecer salidas (outputs) 
 4. Inspeccionar los resultados de las ejecuciones del flujo de trabajo:
    - ¿Cómo afectaron los valores de `dry-run`, `target`, `tag` y `build-status` a los resultados de los trabajos `build` y `deploy`?
    - Reflexionar sobre cómo se utilizaron las salidas (`outputs`) entre los trabajos.
+  
+
+## Tips
+
+Para agregar valores a un archivo, podemos usar la siguiente sintaxis: `echo "<contenido de la línea>" >> "<ruta del archivo>"`
+
+Por ejemplo, para agregar el valor de una entrada a GITHUB_OUTPUT, usa:
+
+`echo "status=${{ inputs.build-status }}" >> $GITHUB_OUTPUT`
+
