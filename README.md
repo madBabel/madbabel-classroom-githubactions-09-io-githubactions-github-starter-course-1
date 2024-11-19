@@ -1,5 +1,5 @@
 Exercise
-# Ejercicio Combinado: Inputs y Outputs en GitHub Actions
+# Ejercicio: Inputs y Outputs en GitHub Actions
 
 ## Objetivo
 
