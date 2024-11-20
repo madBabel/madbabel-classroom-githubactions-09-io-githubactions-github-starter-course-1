@@ -1,4 +1,3 @@
-Exercise
 # Ejercicio: Inputs y Outputs en GitHub Actions
 
 ## Objetivo
@@ -50,7 +49,7 @@ Explorar las formas de proveer entradas (inputs) y establecer salidas (outputs) 
    - ¿Cómo afectaron los valores de `dry-run`, `target`, `tag` y `build-status` a los resultados de los trabajos `build` y `deploy`?
    - Reflexionar sobre cómo se utilizaron las salidas (`outputs`) entre los trabajos.
   
-
+5. Relanzar manualmente un workflow para el target int y el tag v2, y cuando acabe, lanzar el Autograde
 ## Tips
 
 Para agregar valores a un archivo, podemos usar la siguiente sintaxis: `echo "<contenido de la línea>" >> "<ruta del archivo>"`
