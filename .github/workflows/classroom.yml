@@ -2,6 +2,7 @@ name: Autograding Workflow for Inputs and Outputs
 
 on:
   workflow_dispatch:
+  repository_dispatch:
 
 jobs:
   autograde:
